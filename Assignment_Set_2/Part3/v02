@@ -1,0 +1,365 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Untitled7.ipynb",
+      "provenance": [],
+      "collapsed_sections": [],
+      "authorship_tag": "ABX9TyPANVKCdEfUv7Ji4GKePM3Z",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "accelerator": "GPU"
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/ftmhrahimi/Algorithms-For-Data-Science/blob/master/Assignment_Set_2/Part3/v02\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "XKqUGBuc6aKb"
+      },
+      "source": [
+        "import numpy as np\n",
+        "import math\n",
+        "x_data=np.random.rand(2,9000)*10"
+      ],
+      "execution_count": 94,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "mFb9Q8pkDNGi"
+      },
+      "source": [
+        "function1=lambda x:((x-1)*(x-2)*(x-3)*(x-4))**2\n",
+        "function2=lambda y:((y-1)*(y-2)*(y-3)*(y-4))"
+      ],
+      "execution_count": 108,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "IwPgzjnJEO8-"
+      },
+      "source": [
+        "x1=[function1(i) for i in x_data[0]]\n",
+        "y1=[function2(i) for i in x_data[1]]\n",
+        "y_data=(sum(y1,x1))\n",
+        "y_data=[[i/1000] for i in y_data]"
+      ],
+      "execution_count": 109,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "QLcAjSMD6ndr"
+      },
+      "source": [
+        "class Connection:\n",
+        "    def __init__(self, connectedNeuron):\n",
+        "        self.connectedNeuron = connectedNeuron\n",
+        "        self.weight = np.random.normal()\n",
+        "        self.dWeight = 0.0"
+      ],
+      "execution_count": 110,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "VBknZvqC6q9A"
+      },
+      "source": [
+        "class Neuron:\n",
+        "    eta = 0.1\n",
+        "    alpha = 0.1\n",
+        "\n",
+        "    def __init__(self, layer):\n",
+        "        self.dendrons = []\n",
+        "        self.error = 0.0\n",
+        "        self.gradient = 0.0\n",
+        "        self.output = 0.0\n",
+        "        if layer is None:\n",
+        "            pass\n",
+        "        else:\n",
+        "            for neuron in layer:\n",
+        "                con = Connection(neuron)\n",
+        "                self.dendrons.append(con)\n",
+        "    def addError(self, err):\n",
+        "        self.error = self.error + err\n",
+        "\n",
+        "    def sigmoid(self, x):\n",
+        "        return 1 / (1 + math.exp(-x * 1.0))\n",
+        "\n",
+        "    def dSigmoid(self, x):\n",
+        "        return x * (1.0 - x)\n",
+        "\n",
+        "    def setError(self, err):\n",
+        "        self.error = err\n",
+        "\n",
+        "    def setOutput(self, output):\n",
+        "        self.output = output\n",
+        "\n",
+        "    def getOutput(self):\n",
+        "        return self.output\n",
+        "    \n",
+        "    def feedForword(self):\n",
+        "        sumOutput = 0\n",
+        "        if len(self.dendrons) == 0:\n",
+        "            return\n",
+        "        for dendron in self.dendrons:\n",
+        "            sumOutput = sumOutput + dendron.connectedNeuron.getOutput() * dendron.weight\n",
+        "        self.output = self.sigmoid(sumOutput)\n",
+        "    def backPropagate(self):\n",
+        "        self.gradient = self.error * self.dSigmoid(self.output)\n",
+        "        for dendron in self.dendrons:\n",
+        "            dendron.dWeight = Neuron.eta * (\n",
+        "            dendron.connectedNeuron.output * self.gradient) + self.alpha * dendron.dWeight\n",
+        "            dendron.weight = dendron.weight + dendron.dWeight\n",
+        "            dendron.connectedNeuron.addError(dendron.weight * self.gradient)\n",
+        "        self.error = 0;"
+      ],
+      "execution_count": 111,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "AMCcHAEG6uX7"
+      },
+      "source": [
+        "class Network:\n",
+        "    def __init__(self, topology):\n",
+        "        self.layers = []\n",
+        "        for numNeuron in topology:\n",
+        "            layer = []\n",
+        "            for i in range(numNeuron):\n",
+        "                if (len(self.layers) == 0):\n",
+        "                    layer.append(Neuron(None))\n",
+        "                else:\n",
+        "                    layer.append(Neuron(self.layers[-1]))\n",
+        "            layer.append(Neuron(None)) # bias neuron\n",
+        "            layer[-1].setOutput(1) # setting output of bias neuron as 1\n",
+        "            self.layers.append(layer)\n",
+        "    def setInput(self, inputs):\n",
+        "        for i in range(len(inputs)):\n",
+        "            self.layers[0][i].setOutput(inputs[i])\n",
+        "\n",
+        "    def getError(self, target):\n",
+        "        err = 0\n",
+        "        for i in range(len(target)):\n",
+        "            e = (target[i] - self.layers[-1][i].getOutput())\n",
+        "            err = err + e ** 2\n",
+        "        err = err / len(target)\n",
+        "        err = math.sqrt(err)\n",
+        "        return err\n",
+        "    def feedForword(self):\n",
+        "        for layer in self.layers[1:]:\n",
+        "            for neuron in layer:\n",
+        "                neuron.feedForword();\n",
+        "    def backPropagate(self, target):\n",
+        "        for i in range(len(target)):\n",
+        "            self.layers[-1][i].setError(target[i] - self.layers[-1][i].getOutput())\n",
+        "        for layer in self.layers[::-1]: #reverse the order\n",
+        "            for neuron in layer:\n",
+        "                neuron.backPropagate()\n",
+        "    def getResults(self):\n",
+        "        output = []\n",
+        "        for neuron in self.layers[-1]:\n",
+        "            output.append(neuron.getOutput())\n",
+        "        output.pop() # removing the bias neuron\n",
+        "        return output"
+      ],
+      "execution_count": 112,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "YUbKiKB26ykA",
+        "outputId": "3aa93074-4abf-41d1-b8cb-8f035e62f21a",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 1000
+        }
+      },
+      "source": [
+        "def main():\n",
+        "    #topology = []\n",
+        "    #topology.append(2)\n",
+        "    #topology.append(3)\n",
+        "    #topology.append(2)\n",
+        "    net = Network([2,16,8,4,1])\n",
+        "    Neuron.eta = 0.0001\n",
+        "    Neuron.alpha = 0.01\n",
+        "    while True:\n",
+        "\n",
+        "        err = 0\n",
+        "        inputs = x_data.T\n",
+        "        outputs =y_data\n",
+        "        for i in range(len(inputs)):\n",
+        "            net.setInput(inputs[i])\n",
+        "            net.feedForword()\n",
+        "            net.backPropagate(outputs[i])\n",
+        "            err = err + net.getError(outputs[i])\n",
+        "        print (\"error: \", err)\n",
+        "        if err <1:\n",
+        "            break\n",
+        "    while True:\n",
+        "      a = float(input('type 1st input :'))\n",
+        "      b = float(input('type 2st input :'))\n",
+        "      net.setInput([a, b])\n",
+        "      net.feedForword()\n",
+        "      print (net.getResults())\n",
+        "if __name__ == '__main__':\n",
+        "  main()"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "error:  42037644.51918918\n",
+            "error:  42037642.224869005\n",
+            "error:  42037642.07608996\n",
+            "error:  42037642.01457445\n",
+            "error:  42037641.98070738\n",
+            "error:  42037641.95922339\n",
+            "error:  42037641.94436762\n",
+            "error:  42037641.933478564\n",
+            "error:  42037641.925152\n",
+            "error:  42037641.91857832\n",
+            "error:  42037641.91325606\n",
+            "error:  42037641.90885849\n",
+            "error:  42037641.90516425\n",
+            "error:  42037641.90201677\n",
+            "error:  42037641.8993027\n",
+            "error:  42037641.896938615\n",
+            "error:  42037641.8948608\n",
+            "error:  42037641.89301995\n",
+            "error:  42037641.89137851\n",
+            "error:  42037641.889904805\n",
+            "error:  42037641.88857477\n",
+            "error:  42037641.88736839\n",
+            "error:  42037641.886269145\n",
+            "error:  42037641.88526332\n",
+            "error:  42037641.884339824\n",
+            "error:  42037641.88348827\n",
+            "error:  42037641.88270105\n",
+            "error:  42037641.88197104\n",
+            "error:  42037641.8812923\n",
+            "error:  42037641.8806596\n",
+            "error:  42037641.88006827\n",
+            "error:  42037641.879514344\n",
+            "error:  42037641.878994666\n",
+            "error:  42037641.87850572\n",
+            "error:  42037641.87804567\n",
+            "error:  42037641.87761082\n",
+            "error:  42037641.87720028\n",
+            "error:  42037641.87681142\n",
+            "error:  42037641.87644273\n",
+            "error:  42037641.87609282\n",
+            "error:  42037641.87576014\n",
+            "error:  42037641.87544346\n",
+            "error:  42037641.87514161\n",
+            "error:  42037641.874853715\n",
+            "error:  42037641.87457875\n",
+            "error:  42037641.87431597\n",
+            "error:  42037641.8740643\n",
+            "error:  42037641.873823255\n",
+            "error:  42037641.87359234\n",
+            "error:  42037641.87337063\n",
+            "error:  42037641.87315739\n",
+            "error:  42037641.872952715\n",
+            "error:  42037641.87275578\n",
+            "error:  42037641.872566484\n",
+            "error:  42037641.872383796\n",
+            "error:  42037641.87220763\n",
+            "error:  42037641.87203787\n",
+            "error:  42037641.87187417\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "34n0EBmARod3"
+      },
+      "source": [
+        "inputs = [[0, 0], [0, 1], [1, 0], [1, 1]]\n",
+        "outputs = [[0, 0], [1, 0], [1, 0], [0, 1]]"
+      ],
+      "execution_count": 67,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "7XnGVvgakPET"
+      },
+      "source": [
+        "a=list(map(list, zip(*x_data)))"
+      ],
+      "execution_count": 19,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "rkd4By4WkVgi",
+        "outputId": "fedc2f46-0993-4cb7-f425-4a66855c5348",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 34
+        }
+      },
+      "source": [
+        "len(x_data.T)"
+      ],
+      "execution_count": 67,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "2000"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 67
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "ZKaYUC-53dlF"
+      },
+      "source": [
+        ""
+      ],
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
